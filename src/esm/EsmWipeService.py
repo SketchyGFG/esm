@@ -249,7 +249,7 @@ class EsmWipeService:
         """
         markedCounter = 0
         for entity in entities:
-            idPath = sharedFolderPath.joinpath(entity.id)
+            idPath = sharedFolderPath / str(entity.id)
             if idPath.exists():
                 log.debug(f"folder '{idPath}' exists although it is marked as deleted")
                 self.fileSystem.markForDelete(targetPath=idPath)
