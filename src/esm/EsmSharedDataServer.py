@@ -261,7 +261,8 @@ class EsmSharedDataServer:
 
         if self.config.downloadtool.useSharedDataURLFeature:
             # check if there are auto zip files, if so, add the latest
-            filePattern = f"{wwwroot.resolve()}/{self.config.downloadtool.autoZipName.split(".")[0]}*.zip"
+            filePattern = f"{wwwroot.resolve()}/{self.config.downloadtool.autoZipName.split('.')[0]}*.zip"
+
             files = glob.glob(pathname=filePattern)
             if len(files) > 0:
                 path = Path(max(files, key=os.path.getmtime))
@@ -459,7 +460,7 @@ class EsmSharedDataServer:
         if self.config.downloadtool.useSharedDataURLFeature:
             # create auto zip from the folder
             subFolder = tempFolder.joinpath(cacheFolderName)
-            generatedAutoZipName = f"{self.config.downloadtool.autoZipName.split(".")[0]}_{time.strftime('%Y%m%d_%H%M%S')}.zip"
+            generatedAutoZipName = f"{self.config.downloadtool.autoZipName.split('.')[0]}_{time.strftime('%Y%m%d_%H%M%S')}.zip"
             log.debug(f"Creating auto zip from folder '{subFolder}' with name '{generatedAutoZipName}'")
             autoZipFile = self.createZipFile(subFolder, generatedAutoZipName)
             zipFiles = [manualZipFile, autoZipFile]

@@ -10,6 +10,7 @@ from esm.exceptions import EsmException, ExitCodes, WrongParameterError
 from esm.DataTypes import Territory, WipeType
 from esm.ServiceRegistry import ServiceRegistry
 from esm.EsmMain import EsmMain
+from esm.EsmDedicatedServer import EsmDedicatedServer
 from esm.Tools import Timer, getElapsedTime, getTimer
 
 log = logging.getLogger(__name__)
@@ -62,7 +63,8 @@ click.rich_click.COMMAND_GROUPS = {
                 "tool-haimster-connector",
                 "tool-export-chatlog",
                 "eah-restart",
-                "tool-effectiveconfig"
+                "tool-effectiveconfig",
+                "process-info"
             ],
         },
         {
@@ -560,6 +562,45 @@ def toolEfectiveConfig(configfile, overwrite):
         esm.saveEffectiveConfig(configfile, overwrite)
 
 
+@cli.command(name="process-info", short_help="displays information about the currently managed Empyrion server process")
+def processInfo():
+    """Displays basic process information and configuration confirmation for the currently managed Empyrion server.
+    
+    This command shows:
+    - Current server configuration (start mode, multiple instances setting)
+    - Process details (PID, name, status, command line)
+    - Detection method and multiple instance policy
+    
+    Useful for verifying configuration and troubleshooting process detection issues.
+    """
+    with LogContext():
+        esm = ServiceRegistry.get(EsmMain)
+        dedicatedServer = ServiceRegistry.get(EsmDedicatedServer)
+        
+        info = dedicatedServer.getProcessInfo()
+        
+        # Display the information in a formatted way
+        click.echo("ESM Process Information")
+        click.echo("=" * 22)
+        
+        click.echo("\nConfiguration:")
+        click.echo(f"  Start Mode: {info['config']['startMode']}")
+        click.echo(f"  Allow Multiple Instances: {info['config']['allowMultipleInstances']}")
+        click.echo(f"  Dedicated YAML: {info['config']['dedicatedYaml']}")
+        click.echo(f"  Graphics Mode: {info['config']['gfxMode']}")
+        
+        click.echo("\nCurrent Process:")
+        click.echo(f"  PID: {info['process']['pid']}")
+        click.echo(f"  Name: {info['process']['name']}")
+        click.echo(f"  Status: {info['process']['status']}")
+        if info['process']['cmdline'] != 'N/A':
+            click.echo(f"  Command Line: {info['process']['cmdline']}")
+        
+        click.echo("\nProcess Detection:")
+        click.echo(f"  Method: {info['detection']['method']}")
+        click.echo(f"  Multiple Instances: {'Allowed' if info['detection']['multipleInstancesAllowed'] else 'Not Allowed'}")
+
+
 @cli.command(name="eah-restart", short_help="restarts (or stops) EAH using its import-commands feature. Will only work if its running, of course.")
 @click.option('--eahpath', metavar='<path>', help="optional path to alternative eah installation, if you are not using the one provided by the game")
 @click.option('--stop', default=False, show_default=True, is_flag=True, help="if set, will stop eah instead of just restarting it. Beware that this tool can not start eah")
@@ -669,11 +710,12 @@ def showConfiguredTerritories(esm: EsmMain):
         radius = territory.radius/100000
         territoryList.append(f"{name:<40}\t{centerx:>10}\t{centery:>10}\t{centerz:>10}\t{radius:>10}")
 
-    click.echo(f"Configured custom territories:\n" + 
-               f"{"Territory name":<40}\t{"center x":>10}\t{"center y":>10}\t{"center z":>10}\t{"radius":>10}\n" +
-               f"----------------------------------------------------------------------------------------------------------\n" +
-               f"\n".join(territoryList))
-    click.echo(f"\nUse the name '{Territory.GALAXY}' to wipe the whole galaxy.\n")
+    click.echo(
+        "Configured custom territories:\n"
+        f"{'Territory name':<40}\t{'center x':>10}\t{'center y':>10}\t{'center z':>10}\t{'radius':>10}\n"
+        f"{'-' * 106}\n"
+        + "\n".join(territoryList)
+    )
 
 
 def showWipeTypes():

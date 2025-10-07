@@ -28,6 +28,7 @@ class StartMode(str, Enum):
 class ConfigServer(BaseModel):
     dedicatedYaml: Path = Field(..., description="name of the dedicated yaml, make sure this is the one defined in EAH if you use that")
     startMode: StartMode = Field(StartMode.LAUNCHER, description="use 'launcher' if you want to start the game the usual way. The launcher itself will then start the dedicated server. Use 'direct' if you want to bypass the launcher, e.g. if you want to run multiple instances of the server on the same machine.")
+    allowMultipleInstances: bool = Field(False, description="if True and startMode is 'direct', allows multiple instances of the dedicated server to run simultaneously. This bypasses the process count check that normally prevents multiple instances.")
     gfxMode: bool = Field(False, description="If True, enables the blue graphics overlay of the server, probably not needed when you use EAH or something else to manage the server. This uses the '-startDediWithGfx' param in the launcher - which enables the server graphics overlay, you may want to use this when you have no other means of stopping the server")
     minDiskSpaceForStartup: str = Field("2G", pattern=FILESIZEPATTERN, description="if disk space on the drive with the savegame (or ramdisk) is below this, do NOT start the server to avoid savegame corruption. gnu notation")
     startUpSleepTime: int = Field(20, description="min amount of time in seconds to wait for the server to start up when creating a new savegame")
@@ -160,6 +161,7 @@ class DownloadToolConfig(BaseModel):
 
     useSharedDataURLFeature: bool = Field(True, description="if true, a zip for the SharedDataURL feature will be created, served and the dedicated yaml will be automatically edited.")
     autoEditDedicatedYaml: bool = Field(True, description="set to false if you do not want the dedicated yaml to be edited automatically")
+    skipSharedDataURLCheck: bool = Field(False, description="if True, skips the SharedDataURL availability check during server startup. Use this when ESM doesn't manage your shared data files.")
     customSharedDataURL: str = Field("", description="if set, this will be used as the shared data url instead of the automatically generated one. Make sure it is correct!")
     autoZipName: str = Field("SharedData.zip", description="The filename of the zip file for the auto download of the SharedDataURL feature postfixed with _yyyymmdd_hhmmss so the client recognizes this as a new file on recreation.")
 

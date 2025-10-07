@@ -8,6 +8,7 @@ general:
 server:
   dedicatedYaml: REQUIRED        # name of the dedicated yaml, make sure this is the one defined in EAH if you use that
   startMode: launcher            # use 'launcher' if you want to start the game the usual way. The launcher itself will then start the dedicated server. Use 'direct' if you want to bypass the launcher, e.g. if you want to run multiple instances of the server on the same machine.
+  allowMultipleInstances: false  # if True and startMode is 'direct', allows multiple instances of the dedicated server to run simultaneously. This bypasses the process count check that normally prevents multiple instances.
   gfxMode: false                 # If True, enables the blue graphics overlay of the server, probably not needed when you use EAH or something else to manage the server. This uses the '-startDediWithGfx' param in the launcher - which enables the server graphics overlay, you may want to use this when you have no other means of stopping the server
   minDiskSpaceForStartup: 2G     # if disk space on the drive with the savegame (or ramdisk) is below this, do NOT start the server to avoid savegame corruption. gnu notation
   startUpSleepTime: 20           # min amount of time in seconds to wait for the server to start up when creating a new savegame
@@ -55,6 +56,7 @@ downloadtool:   # configuration for the shared data download tool
   customExternalHostNameAndPort: ''                           # if set, this will be used as the host instead of the automatically generated host-part of the url. must be something like: 'https://my-server.com:12345'. The path/name of the files will be appended.
   useSharedDataURLFeature: true                               # if true, a zip for the SharedDataURL feature will be created, served and the dedicated yaml will be automatically edited.
   autoEditDedicatedYaml: true                                 # set to false if you do not want the dedicated yaml to be edited automatically
+  skipSharedDataURLCheck: false                               # if True, skips the SharedDataURL availability check during server startup. Use this when ESM doesn't manage your shared data files.
   customSharedDataURL: ''                                     # if set, this will be used as the shared data url instead of the automatically generated one. Make sure it is correct!
   autoZipName: SharedData.zip                                 # The filename of the zip file for the auto download of the SharedDataURL feature postfixed with _yyyymmdd_hhmmss so the client recognizes this as a new file on recreation.
   useCustomCacheFolderName: false                             # if true, the custom folder name will be used, if false, the folder name will be generated with following pattern '{gamename}_{serverip}_{uniquegameid}'

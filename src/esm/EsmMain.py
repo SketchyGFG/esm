@@ -11,7 +11,7 @@ from esm.EsmGameChatService import EsmGameChatService
 from esm.EsmHaimsterConnector import EsmHaimsterConnector
 from esm.EsmSharedDataServer import EsmSharedDataServer
 from esm.exceptions import AdminRequiredException, ExitCodes, RequirementsNotFulfilledError, ServerNeedsToBeStopped, UserAbortedException, WrongParameterError
-from esm.ConfigModels import MainConfig
+from esm.ConfigModels import MainConfig, StartMode
 from esm.DataTypes import Territory, WipeType
 from esm.EsmLogger import EsmLogger
 from esm.FsTools import FsTools
@@ -149,8 +149,13 @@ class EsmMain:
         Will start the server (and the ramdisk synchronizer, if ramdisk is enabled). Function returns once the server has been started.
         """
         if self.dedicatedServer.isRunning():
-            log.warning("A server is already running! You may want to use the server resume operation to connect back to it.")
-            raise ServerNeedsToBeStopped("A server is already running!")
+            # Check if multiple instances are allowed
+            if (self.config.server.startMode == StartMode.DIRECT and 
+                self.config.server.allowMultipleInstances):
+                log.info("A server is already running, but allowMultipleInstances is enabled for direct mode - proceeding with startup")
+            else:
+                log.warning("A server is already running! You may want to use the server resume operation to connect back to it.")
+                raise ServerNeedsToBeStopped("A server is already running!")
         
         self.onStartUp(haimster=False)
         

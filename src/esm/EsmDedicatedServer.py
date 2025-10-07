@@ -76,10 +76,12 @@ class EsmDedicatedServer:
         """
         arguments = self.getCommandForDirectMode()
         arguments2String = lambda arguments: " ".join(str(element) if isinstance(element, Path) else element for element in arguments)
-        log.info(f"Starting server with: '{arguments2String(arguments)}' in directory '{self.config.paths.install}'")
+        # Set working directory to DedicatedServer folder to match launcher behavior
+        dedicated_server_dir = self.config.paths.install / self.config.foldernames.dedicatedserver
+        log.info(f"Starting server with: '{arguments2String(arguments)}' in directory '{dedicated_server_dir}'")
         if not self.config.general.debugMode:
             # we do not use subprocess.run here, since we'll need the PID later and only psutil.Popen provides that. <- unless you just keep the process object, since it provides all methods.           
-            process = psutil.Popen(args=arguments)
+            process = psutil.Popen(args=arguments, cwd=dedicated_server_dir)
         else:
             log.debug(f"debug mode enabled!")
         log.debug(f"Process returned: {process}")
@@ -188,10 +190,17 @@ class EsmDedicatedServer:
             log.debug(f"found process by name '{processName}': {process}")
             return process
         elif processCount > 1:
+            # Check if multiple instances are allowed
+            if (self.config.server.startMode == StartMode.DIRECT and 
+                self.config.server.allowMultipleInstances):
+                log.debug(f"Found {processCount} processes named {processName}, but allowMultipleInstances is enabled for direct mode - returning the first one")
+                process = processes[0]
+                return process
+            
             # exit the script with an error to avoid further breaking
             #log.warn(f"found {processCount} named {processName}. This might be bad at this point.")
             if raiseException:
-                raise Exception(f"Found {processCount} processes named {processName}. This will probably break this script. If you want to run multiple instances of the game, use the startmode 'direct'. Otherwise you'll probably want to stop or kill the remaining process first.")
+                raise Exception(f"Found {processCount} processes named {processName}. This will probably break this script. If you want to run multiple instances of the game, use the startmode 'direct' and set allowMultipleInstances to true. Otherwise you'll probably want to stop or kill the remaining process first.")
             else:
                 return None
         else:
@@ -329,6 +338,11 @@ class EsmDedicatedServer:
         """
         make sure the shared data url is available, raise an error if not because this will break the game
         """
+        # Skip check if configured to do so
+        if self.config.downloadtool.skipSharedDataURLCheck:
+            log.debug("Skipping SharedDataURL availability check as configured")
+            return True
+            
         # invalidate configuration, since it might be outdated if the shared data server is running within the same process.
         del self.config
         url = self.config.dedicatedConfig.GameConfig.SharedDataURL
@@ -356,3 +370,54 @@ class EsmDedicatedServer:
         except Exception as ex:
             return False
         return False
+
+    def getProcessInfo(self):
+        """
+        Returns basic process information and configuration for display purposes.
+        Returns a dictionary with process details and configuration confirmation.
+        """
+        info = {
+            'config': {
+                'startMode': self.config.server.startMode.value,
+                'allowMultipleInstances': self.config.server.allowMultipleInstances,
+                'dedicatedYaml': str(self.config.server.dedicatedYaml),
+                'gfxMode': self.gfxMode
+            },
+            'process': None,
+            'detection': {
+                'method': 'Direct mode (bypasses launcher)' if self.config.server.startMode == StartMode.DIRECT else 'Launcher mode',
+                'multipleInstancesAllowed': self.config.server.startMode == StartMode.DIRECT and self.config.server.allowMultipleInstances
+            }
+        }
+        
+        # Try to get current process
+        if not self.process:
+            self.process = self.findDedicatedExeProcess(raiseException=False)
+        
+        if self.process:
+            try:
+                info['process'] = {
+                    'pid': self.process.pid,
+                    'name': self.process.name(),
+                    'status': 'Running' if self.process.is_running() else 'Not Running',
+                    'cmdline': ' '.join(self.process.cmdline()) if self.process.cmdline() else 'N/A',
+                    'exe': self.process.exe() if hasattr(self.process, 'exe') else 'N/A'
+                }
+            except (psutil.AccessDenied, psutil.NoSuchProcess, psutil.ZombieProcess):
+                info['process'] = {
+                    'pid': 'N/A',
+                    'name': 'N/A', 
+                    'status': 'Found but not accessible',
+                    'cmdline': 'N/A',
+                    'exe': 'N/A'
+                }
+        else:
+            info['process'] = {
+                'pid': 'N/A',
+                'name': 'N/A',
+                'status': 'No process detected',
+                'cmdline': 'N/A', 
+                'exe': 'N/A'
+            }
+            
+        return info
